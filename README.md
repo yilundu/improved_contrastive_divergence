@@ -49,7 +49,7 @@ Given a list of model names, resume iterations, and conditioned values, the code
 
 # Generation and sandbox evaluation
 
-The ebm_sandbox.py file consists of functions for evaluating EBMs (such as out-of-distribution detection). The test_inception.py contains code to evaluate generations of the model.
+The ebm_sandbox.py file consists of functions for evaluating EBMs (such as out-of-distribution detection). The test_inception.py contains code to evaluate generations of the model. Additional files such places_gen.py and files of the form \*_gen.py can be used for qualitative generation of different datasets.
 
 # Citation
 
