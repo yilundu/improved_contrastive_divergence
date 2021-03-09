@@ -51,6 +51,10 @@ Given a list of model names, resume iterations, and conditioned values, the code
 
 The ebm_sandbox.py file consists of functions for evaluating EBMs (such as out-of-distribution detection). The test_inception.py contains code to evaluate generations of the model. Additional files such places_gen.py and files of the form \*_gen.py can be used for qualitative generation of different datasets.
 
+# Pretrained Models
+
+Pretrained models for compositional CelebA-HQ generation can be found at https://www.dropbox.com/sh/4p43o1kgt804kwg/AADZF89qY89UdwzYJYvVzVmha?dl=0. You will need to replace the model file and celeba generation file with those from the dropbox link.
+
 # Citation
 
 If you find the code or paper helpful, please consider citing:
