@@ -13,16 +13,17 @@ pip install -r requirements.txt
 
 The following command trains a basic cifar10 model.
 ```
-python train.py --exp=cifar10_model --step_lr=100.0 --num_steps=40 --cuda --ensembles=1 --kl_coeff=1.0 --kl=True --multiscale --self_attn --reservoir
+python train.py --exp=cifar10_model --step_lr=100.0 --num_steps=40 --cuda --ensembles=1 --kl_coeff=1.0 --kl=True --multiscale --self_attn --reservoir --cond
 ```
 
 
 # Training CelebA models
 
-The following command trains a CelebA model.
+The following command trains a CelebA model. The compose conditional models together, you need to specify the conditional generation flag, as well as the index in the code to condition the model.
 
 ```
- python train.py --dataset=celeba --exp=celeba_model --step_lr=500.0 --num_steps=40 --kl=True --gpus=8 --filter_dim=128 --multiscale --self_attn --reservoir
+ python train.py --dataset=celeba --exp=celeba_model --step_lr=500.0 --num_steps=40 --kl=True --gpus=8 --filter_dim=128 --multiscale --self_attn --reservoir --cond
+--cond_idx=<>
 ```
 
 
