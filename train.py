@@ -386,7 +386,7 @@ def train(models, models_ema, optimizer, logger, dataloader, resume_iter, logdir
                     np.random.uniform(
                         0,
                         1,
-                        data_corrupt.size(0)) > 0.05)
+                        data_corrupt.size(0)) > 0.001)
                 data_corrupt[replay_mask] = torch.Tensor(replay_batch[replay_mask]).cuda(rank_idx)
             else:
                 idxs = None
