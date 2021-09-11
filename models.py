@@ -147,7 +147,7 @@ class CondResBlock(nn.Module):
 
         x = self.act(x)
 
-        x_out = x
+        x_out = x + x_orig
 
         if self.downsample:
             x_out = self.conv_downsample(x_out)
