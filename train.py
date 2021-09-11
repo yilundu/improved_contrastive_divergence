@@ -61,7 +61,7 @@ flags.DEFINE_bool('alias', False,
 flags.DEFINE_string('dataset','cifar10',
     'cifar10 or celeba')
 flags.DEFINE_integer('batch_size', 128, 'batch size during training')
-flags.DEFINE_bool('multiscale', False, 'A multiscale EBM')
+flags.DEFINE_bool('multiscale', True, 'A multiscale EBM')
 flags.DEFINE_bool('self_attn', True, 'Use self attention in models')
 flags.DEFINE_bool('sigmoid', False, 'Apply sigmoid on energy (can improve the stability)')
 flags.DEFINE_bool('anneal', False, 'Decrease noise over Langevin steps')
