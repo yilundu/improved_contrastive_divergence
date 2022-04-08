@@ -233,50 +233,194 @@ def conceptcombine(model_list, select_idx):
     imsave("debug.png", output)
 
 
-def combination_figure(sess, kvs, select_idx):
+def conceptnegate(model_list, select_idx):
+
     n = 64
+    labels = []
 
-    print("here")
-    labels = kvs['labels']
-    x_mod = kvs['x_mod']
-    X_NOISE = kvs['X_NOISE']
-    model_base = kvs['model_base']
-    weights = kvs['weights']
-    feed_dict = {}
+    for six in select_idx:
+        label_ix = np.eye(2)[six]
+        label_batch = np.tile(label_ix[None, :], (n, 1))
+        label = torch.Tensor(label_batch).cuda()
+        labels.append(label)
 
-    for i, label in enumerate(labels):
-        j = select_idx[i]
-        feed_dict[label] = np.tile(np.eye(2)[j:j+1], (16, 1))
+    im = torch.rand(n, 3, 128, 128).cuda()
+    im_noise = torch.randn_like(im).detach()
 
-    x_noise = np.random.uniform(0, 1, (n, 128, 128, 3))
-    # x_noise =  np.random.uniform(0, 1, (n, 128, 128, 3)) / 2 + np.random.uniform(0, 1, (n, 1, 1, 3)) * 1. / 2
+    def get_color_distortion(s=1.0):
+    # s is the strength of color distortion.
+        color_jitter = transforms.ColorJitter(0.8*s, 0.8*s, 0.8*s, 0.4*s)
+        rnd_color_jitter = transforms.RandomApply([color_jitter], p=0.8)
+        rnd_gray = transforms.RandomGrayscale(p=0.2)
+        color_distort = transforms.Compose([
+            rnd_color_jitter,
+            rnd_gray])
+        return color_distort
 
-    feed_dict[X_NOISE] = x_noise
+    color_transform = get_color_distortion()
 
-    output = sess.run([x_mod], feed_dict)[0]
-    output = output.reshape((n * 128, 128, 3))
+    im_size = 128
+    transform = transforms.Compose([transforms.RandomResizedCrop(im_size, scale=(0.08, 1.0)), transforms.RandomHorizontalFlip(), color_transform, transforms.ToTensor()])
+
+    # First get good initializations for sampling
+    for i in range(10):
+        for i in range(20):
+            im_noise.normal_()
+            im = im + 0.001 * im_noise
+            # im.requires_grad = True
+            im.requires_grad_(requires_grad=True)
+            energy = 0
+
+            for i, (model, label) in enumerate(zip(model_list, labels)):
+                # Negate the 2nd model
+                if i == 1:
+                    energy = -0.001 * model.forward(im, label) +  energy
+                else:
+                    energy = model.forward(im, label) +  energy
+
+            # print("step: ", i, energy.mean())
+            im_grad = torch.autograd.grad([energy.sum()], [im])[0]
+
+            im = im - FLAGS.step_lr * im_grad
+            im = im.detach()
+
+            im = torch.clamp(im, 0, 1)
+
+        im = im.detach().cpu().numpy().transpose((0, 2, 3, 1))
+        im = (im * 255).astype(np.uint8)
+
+        ims = []
+        for i in range(im.shape[0]):
+            im_i = np.array(transform(Image.fromarray(np.array(im[i]))))
+            ims.append(im_i)
+
+        im = torch.Tensor(np.array(ims)).cuda()
+
+    # Then refine the images
+
+    for i in range(FLAGS.num_steps):
+        im_noise.normal_()
+        im = im + 0.001 * im_noise
+        # im.requires_grad = True
+        im.requires_grad_(requires_grad=True)
+        energy = 0
+
+        for i, (model, label) in enumerate(zip(model_list, labels)):
+            # Negate the 2nd model
+            if i == 1:
+                energy = -0.001 * model.forward(im, label) +  energy
+            else:
+                energy = model.forward(im, label) +  energy
+
+        print("step: ", i, energy.mean())
+        im_grad = torch.autograd.grad([energy.sum()], [im])[0]
+
+        im = im - FLAGS.step_lr * im_grad
+        im = im.detach()
+
+        im = torch.clamp(im, 0, 1)
+
+    output = im.detach().cpu().numpy()
+    output = output.transpose((0, 2, 3, 1))
+    output = output.reshape((-1, 8, 128, 128, 3)).transpose((0, 2, 1, 3, 4)).reshape((-1, 128 * 8, 3))
     imsave("debug.png", output)
 
 
-def negation_figure(sess, kvs, select_idx):
+def conceptdisjunction(model_list, select_idx):
+
     n = 64
+    labels = []
 
-    labels = kvs['labels']
-    x_mod = kvs['x_mod']
-    X_NOISE = kvs['X_NOISE']
-    model_base = kvs['model_base']
-    weights = kvs['weights']
-    feed_dict = {}
+    for six in select_idx:
+        label_ix = np.eye(2)[six]
+        label_batch = np.tile(label_ix[None, :], (n, 1))
+        label = torch.Tensor(label_batch).cuda()
+        labels.append(label)
 
-    for i, label in enumerate(labels):
-        j = select_idx[i]
-        feed_dict[label] = np.tile(np.eye(2)[j:j+1], (n, 1))
+    im = torch.rand(n, 3, 128, 128).cuda()
+    im_noise = torch.randn_like(im).detach()
 
-    x_noise = np.random.uniform(0, 1, (n, 128, 128, 3))
-    feed_dict[X_NOISE] = x_noise
+    def get_color_distortion(s=1.0):
+    # s is the strength of color distortion.
+        color_jitter = transforms.ColorJitter(0.8*s, 0.8*s, 0.8*s, 0.4*s)
+        rnd_color_jitter = transforms.RandomApply([color_jitter], p=0.8)
+        rnd_gray = transforms.RandomGrayscale(p=0.2)
+        color_distort = transforms.Compose([
+            rnd_color_jitter,
+            rnd_gray])
+        return color_distort
 
-    output = sess.run([x_mod], feed_dict)[0]
-    output = output.reshape((n * 128, 128, 3))
+    color_transform = get_color_distortion()
+
+    im_size = 128
+    transform = transforms.Compose([transforms.RandomResizedCrop(im_size, scale=(0.08, 1.0)), transforms.RandomHorizontalFlip(), color_transform, transforms.ToTensor()])
+
+    # First get good initializations for sampling
+    for i in range(10):
+        for i in range(20):
+            im_noise.normal_()
+            im = im + 0.001 * im_noise
+            # im.requires_grad = True
+            im.requires_grad_(requires_grad=True)
+            energy = 0
+
+            # Scale to determine temperature on distributions
+            scale = 100
+            energies = []
+            for model, label in zip(model_list, labels):
+                energy = model.forward(im, label)
+                energies.append(energy)
+
+            energy = torch.stack(energies, dim=1)
+            energy = -torch.logsumexp(scale * (-1 * energy), dim=1) / scale
+
+            # print("step: ", i, energy.mean())
+            im_grad = torch.autograd.grad([energy.sum()], [im])[0]
+
+            im = im - FLAGS.step_lr * im_grad
+            im = im.detach()
+
+            im = torch.clamp(im, 0, 1)
+
+        im = im.detach().cpu().numpy().transpose((0, 2, 3, 1))
+        im = (im * 255).astype(np.uint8)
+
+        ims = []
+        for i in range(im.shape[0]):
+            im_i = np.array(transform(Image.fromarray(np.array(im[i]))))
+            ims.append(im_i)
+
+        im = torch.Tensor(np.array(ims)).cuda()
+
+    # Then refine the images
+
+    for i in range(FLAGS.num_steps):
+        im_noise.normal_()
+        im = im + 0.001 * im_noise
+        # im.requires_grad = True
+        im.requires_grad_(requires_grad=True)
+        energy = 0
+
+        scale = 100
+        energies = []
+        for model, label in zip(model_list, labels):
+            energy = model.forward(im, label)
+            energies.append(energy)
+
+        energy = torch.stack(energies, dim=1)
+        energy = -torch.logsumexp(scale * (-1 * energy), dim=1) / scale
+
+        print("step: ", i, energy.mean())
+        im_grad = torch.autograd.grad([energy.sum()], [im])[0]
+
+        im = im - FLAGS.step_lr * im_grad
+        im = im.detach()
+
+        im = torch.clamp(im, 0, 1)
+
+    output = im.detach().cpu().numpy()
+    output = output.transpose((0, 2, 3, 1))
+    output = output.reshape((-1, 8, 128, 128, 3)).transpose((0, 2, 1, 3, 4)).reshape((-1, 128 * 8, 3))
     imsave("debug.png", output)
 
 
